@@ -1,0 +1,67 @@
+// Prisma schema for the Universal Product Feedback system
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum FeedbackType {
+  bug
+  feedback
+  feature
+}
+
+model App {
+  id          String     @id @default(cuid())
+  name        String
+  apiKey      String     @unique
+  apiKeyLast4 String
+  disabled    Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  webhooks    Webhook[]
+  feedback    Feedback[]
+
+  @@index([apiKey])
+}
+
+model Webhook {
+  id        String       @id @default(cuid())
+  appId     String
+  type      FeedbackType
+  url       String
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  app App @relation(fields: [appId], references: [id], onDelete: Cascade)
+
+  @@unique([appId, type])
+  @@index([appId])
+}
+
+model Feedback {
+  id                String       @id @default(cuid())
+  appId             String
+  type              FeedbackType
+  message           String
+  appVersion        String?
+  platform          String?
+  device            String?
+  language          String?
+  userId            String?
+  metadata          Json?
+  discordDelivered  Boolean      @default(false)
+  discordError      String?
+  createdAt         DateTime     @default(now())
+
+  app App @relation(fields: [appId], references: [id], onDelete: Cascade)
+
+  @@index([appId])
+  @@index([type])
+  @@index([createdAt])
+}
